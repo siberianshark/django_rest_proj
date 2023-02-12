@@ -1,11 +1,12 @@
 import React from 'react';
-
+import logo from './logo.svg';
 import './App.css';
 import Cookies from 'universal-cookie';
 import ProjectList from './components/Project.js';
 import TaskList from './components/ToDo.js';
 import ProjectTasksList from './components/ProjectTasks.js';
-import LoginForm from './components/Auth.js';
+import LoginForm from './components/Auth.js'
+import TaskForm from './components/TaskForm.js.js';
 import axios from 'axios';
 import { BrowserRouter, Route, Link, Routes } from 'react-router-dom'
 
@@ -69,14 +70,39 @@ class App extends React.Component {
     return headers
   }
 
+  deleteProject(id) {
+    const headers = this.get_headers()
+    axios.delete(`http://127.0.0.1:8000/api/projects/${id}`, { headers, headers })
+      .then(response => {
+        this.setState({
+          projects: this.state.projects.filter((project) => project.id !==
+            id)
+        })
+      }).catch(error => console.log(error))
+  }
+
+  createTask(task, task_content) {
+    const headers = this.get_headers()
+    const data = { task: task, task_content: task_content }
+    axios.post(`http://127.0.0.1:8000/api/tasks/`, data, { headers, headers })
+      .then(response => {
+        let new_task = response.data
+        const task = this.state.tasks.filter((item) => item.id ===
+          new_task.task)[0]
+        new_task.task = task
+        this.setState({ tasks: [...this.state.tasks, new_task] })
+      }).catch(error => console.log(error))
+  }
+
+
 
   load_data() {
     const headers = this.get_headers()
-    axios.get('http://127.0.0.1:8000/api/projects', { headers })
+    axios.get('http://127.0.0.1:8000/api/projects/', { headers })
       .then(response => {
         this.setState({ projects: response.data })
       }).catch(error => console.log(error))
-    axios.get('http://127.0.0.1:8000/api/tasks', { headers })
+    axios.get('http://127.0.0.1:8000/api/tasks/', { headers })
       .then(response => {
         this.setState({ tasks: response.data })
       }).catch(error => {
@@ -111,8 +137,10 @@ class App extends React.Component {
             </ul>
           </nav>
           <Routes>
-            <Route exact path='/' element={() => <ProjectList projects={this.state.projects} />} />
+            <Route exact path='/' element={() => <ProjectList projects={this.state.projects} deleteProject={(id) => this.deleteProject(id)} />} />
             <Route exact path='/tasks' element={() => <TaskList tasks={this.state.tasks} />} />
+            <Route exact path='/tasks/create' component={() => <TaskForm projects={this.state.projects} createTask={(task, task_content) => this.createTask(task, task_content)} />} />
+
             {/* <Route exact path='/login' component={() => <LoginForm />} /> */}
             <Route exact path='/project/:id' element={() => <ProjectTasksList items={this.state.tasks} />} />
             <Route exact path='/login' element={() => <LoginForm get_token={(username, password) => this.get_token(username, password)} />} />
